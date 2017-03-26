@@ -9,7 +9,7 @@ import ratpack.func.Function;
 
 public class CircuitBreakerTransformer<T> implements Function<Upstream<? extends T>, Upstream<T>> {
 
-  private CircuitBreaker circuitBreaker;
+  private final CircuitBreaker circuitBreaker;
   private Function<Throwable, ? extends T> recoverer;
 
   private CircuitBreakerTransformer(CircuitBreaker circuitBreaker) {
@@ -17,7 +17,9 @@ public class CircuitBreakerTransformer<T> implements Function<Upstream<? extends
   }
 
   /**
-   * Create a new transformer that can be applied to the {@link ratpack.exec.Promise#transform(Function)}  method.
+   * Create a new transformer that can be applied to the {@link ratpack.exec.Promise#transform(Function)} method.
+   * The Promised value will pass through the circuitbreaker, potentially causing it to open if the thresholds
+   * for the circuit breaker are exceeded.
    *
    * @param circuitBreaker the circuit breaker to use
    * @return
