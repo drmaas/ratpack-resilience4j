@@ -1,6 +1,6 @@
 ext {
   commonVersions = [
-    groovy : '2.4.9',
+    groovy : '2.4.10',
     ratpack: '1.4.5',
     resilience4j    : '0.8.2',
     spock  : '1.1-groovy-2.4-rc-3',
@@ -9,7 +9,7 @@ ext {
 
   commonDependencies = [
     groovy     : "org.codehaus.groovy:groovy:${commonVersions.groovy}",
-    ratpack    : "io.ratpack:ratpack-core:${commonVersions.ratpack}",
+    ratpack    : "io.ratpack:ratpack-guice:${commonVersions.ratpack}",
     resilience4j        : "io.github.robwin:javaslang-circuitbreaker:${commonVersions.resilience4j}",
     spock      : "org.spockframework:spock-unitils:${commonVersions.spock}",
     ratpackGroovyTest: "io.ratpack:ratpack-groovy-test:${commonVersions.ratpack}",
