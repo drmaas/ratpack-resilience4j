@@ -3,6 +3,8 @@ package ratpack.resilience4j
 import io.github.robwin.circuitbreaker.CircuitBreaker
 import io.github.robwin.circuitbreaker.CircuitBreakerConfig
 import io.github.robwin.circuitbreaker.CircuitBreakerRegistry
+import io.reactivex.Flowable
+import io.reactivex.functions.Function
 import ratpack.exec.Promise
 import ratpack.test.embed.EmbeddedApp
 import ratpack.test.http.TestHttpClient
@@ -11,6 +13,8 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 
 import static ratpack.groovy.test.embed.GroovyEmbeddedApp.ratpack
 
@@ -48,6 +52,30 @@ class ResilienceModuleSpec extends Specification {
             render it
           }
         }
+        get('stage') { Something something ->
+          render something.breakerStage().toCompletableFuture().get()
+        }
+        get('stageBad') { Something something ->
+          render something.breakerStageBad().toCompletableFuture().get()
+        }
+        get('stageRecover') { Something something ->
+          render something.breakerStageRecover().toCompletableFuture().get()
+        }
+        get('flow') { Something something ->
+          something.breakerFlow().subscribe {
+            render it
+          }
+        }
+        get('flowBad') { Something something ->
+          something.breakerFlowBad().subscribe {
+            render it
+          }
+        }
+        get('flowRecover') { Something something ->
+          something.breakerFlowRecover().subscribe {
+            render it
+          }
+        }
       }
     }
     client = testHttpClient(app)
@@ -67,7 +95,7 @@ class ResilienceModuleSpec extends Specification {
     actual = get(badPath)
 
     then:
-    actual.statusCode == 500
+    actual.statusCode == badStatus
     !breaker.callPermitted
     breaker.state == CircuitBreaker.State.OPEN
 
@@ -82,8 +110,10 @@ class ResilienceModuleSpec extends Specification {
     breaker.state == CircuitBreaker.State.OPEN
 
     where:
-    path      | badPath      | recoverPath      | breakerName | expectedText
-    'promise' | 'promiseBad' | 'promiseRecover' | 'test'      | 'breaker promise'
+    path      | badPath      | recoverPath      | breakerName | expectedText      | badStatus
+    'promise' | 'promiseBad' | 'promiseRecover' | 'test'      | 'breaker promise' | 500
+    'stage'   | 'stageBad'   | 'stageRecover'   | 'test'      | 'breaker stage'   | 404
+    'flow'    | 'flowBad'    | 'flowRecover'    | 'test'      | 'breaker flow'    | 500
   }
 
   def buildConfig() {
@@ -116,6 +146,36 @@ class ResilienceModuleSpec extends Specification {
       Promise.async {
         it.error(new Exception("breaker promise bad"))
       }
+    }
+
+    @Breaker(name = "test")
+    CompletionStage<String> breakerStage() {
+      CompletableFuture.supplyAsync { 'breaker stage' }
+    }
+
+    @Breaker(name = "test")
+    CompletionStage<Void> breakerStageBad() {
+      CompletableFuture.supplyAsync { throw new RuntimeException("bad") }
+    }
+
+    @Breaker(name = "test", recovery = MyRecoveryFunction)
+    CompletionStage<Void> breakerStageRecover() {
+      CompletableFuture.supplyAsync { throw new RuntimeException("bad") }
+    }
+
+    @Breaker(name = "test")
+    Flowable<String> breakerFlow() {
+      Flowable.just("breaker flow")
+    }
+
+    @Breaker(name = "test")
+    Flowable<Void> breakerFlowBad() {
+      Flowable.just("breaker flow").map({ throw new Exception("bad") } as Function<String, Void>)
+    }
+
+    @Breaker(name = "test", recovery = MyRecoveryFunction)
+    Flowable<Void> breakerFlowRecover() {
+      Flowable.just("breaker flow").map({ throw new Exception("bad") } as Function<String, Void>)
     }
   }
 
