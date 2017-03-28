@@ -41,15 +41,15 @@ dependencies {
 
 modifyPom {
   project {
-    name 'Ratpack kotlin dsl library'
-    description 'Ratpack kotlin dsl library'
-    url 'https://github.com/drmaas/ratpack-kotlin'
-    inceptionYear '2016'
+    name 'Ratpack resilience4j library'
+    description 'Ratpack resilience4j library'
+    url 'https://github.com/drmaas/ratpack-resilience4j'
+    inceptionYear '2017'
 
     scm {
-      url 'https://github.com/drmaas/ratpack-kotlin'
-      connection 'scm:https://drmaas@github.com/drmaas/ratpack-kotlin.git'
-      developerConnection 'scm:git://github.com/drmaas/ratpack-kotlin.git'
+      url 'https://github.com/drmaas/ratpack-resilience4j'
+      connection 'scm:https://drmaas@github.com/drmaas/ratpack-resilience4j.git'
+      developerConnection 'scm:git://github.com/drmaas/ratpack-resilience4j.git'
     }
 
     licenses {
