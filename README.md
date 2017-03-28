@@ -1,5 +1,5 @@
 # ratpack-resilience4j
-Ratpack support for resilience4j
+Ratpack support for resilience4j. https://github.com/resilience4j/resilience4j
 
 [![Build Status](https://travis-ci.org/drmaas/ratpack-rx2.svg?branch=master)](https://travis-ci.org/drmaas/ratpack-resilience4j)
 
