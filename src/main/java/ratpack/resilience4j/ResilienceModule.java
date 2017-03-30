@@ -21,7 +21,7 @@ public class ResilienceModule extends ConfigurableModule<ResilienceModule.Resili
   }
 
   public static class ResilienceConfig {
-    boolean enableMetrics = false;
+    private boolean enableMetrics = false;
 
     public ResilienceConfig enableMetrics(boolean enableMetrics) {
       this.enableMetrics = enableMetrics;
