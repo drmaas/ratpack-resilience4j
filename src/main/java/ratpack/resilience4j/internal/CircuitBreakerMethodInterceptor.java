@@ -12,7 +12,7 @@ import javaslang.control.Try;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import ratpack.exec.Promise;
-import ratpack.resilience4j.Breaker;
+import ratpack.resilience4j.CircuitBreak;
 import ratpack.resilience4j.CircuitBreakerTransformer;
 import ratpack.resilience4j.RecoveryFunction;
 
@@ -22,29 +22,36 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * A {@link MethodInterceptor} to handle all methods annotated with {@link ratpack.resilience4j.Breaker}. It will
+ * A {@link MethodInterceptor} to handle all methods annotated with {@link CircuitBreak}. It will
  * handle methods that return a Promise only. It will add a transform to the promise with the circuit breaker and
  * fallback found in the annotation.
  */
-public class BreakerMethodInterceptor implements MethodInterceptor {
+public class CircuitBreakerMethodInterceptor implements MethodInterceptor {
 
   private final Provider<CircuitBreakerRegistry> provider;
 
   @Inject
-  public BreakerMethodInterceptor(Provider<CircuitBreakerRegistry> provider) {
+  public CircuitBreakerMethodInterceptor(Provider<CircuitBreakerRegistry> provider) {
     this.provider = provider;
   }
 
   @SuppressWarnings("unchecked")
   @Override
   public Object invoke(MethodInvocation invocation) throws Throwable {
-    Object result = invocation.proceed();
-    Breaker annotation = invocation.getMethod().getAnnotation(Breaker.class);
+    CircuitBreak annotation = invocation.getMethod().getAnnotation(CircuitBreak.class);
     CircuitBreaker breaker = provider.get().circuitBreaker(annotation.name());
     if (breaker == null) {
-      return result;
+      return invocation.proceed();
     }
     RecoveryFunction<?> recoveryFunction = annotation.recovery().newInstance();
+    Object result;
+    StopWatch stopWatchOuter = StopWatch.start(breaker.getName());
+    try {
+      result = invocation.proceed();
+    } catch (Exception e) {
+      breaker.onError(stopWatchOuter.getProcessingDuration(), e);
+      return recoveryFunction.apply((Throwable) e);
+    }
     if (result instanceof Promise<?>) {
       CircuitBreakerTransformer transformer = CircuitBreakerTransformer.of(breaker);
       if (!annotation.recovery().isAssignableFrom(DefaultRecoveryFunction.class)) {
@@ -86,17 +93,6 @@ public class BreakerMethodInterceptor implements MethodInterceptor {
           }
         });
       }
-    } else {
-      Object supplied = result;
-      Try.CheckedSupplier<Object> supplier = CircuitBreaker.decorateCheckedSupplier(breaker, () -> supplied);
-      Try<Object> recovered = Try.of(supplier).recover(throwable -> {
-        try {
-          return recoveryFunction.apply(throwable);
-        } catch (Exception e) {
-          return null;
-        }
-      });
-      return recovered.get();
     }
     return result;
   }

@@ -3,6 +3,8 @@ package ratpack.resilience4j
 import io.github.robwin.circuitbreaker.CircuitBreaker
 import io.github.robwin.circuitbreaker.CircuitBreakerConfig
 import io.github.robwin.circuitbreaker.CircuitBreakerRegistry
+import io.github.robwin.ratelimiter.RateLimiterConfig
+import io.github.robwin.ratelimiter.RateLimiterRegistry
 import io.reactivex.Flowable
 import io.reactivex.functions.Function
 import ratpack.exec.Promise
@@ -33,6 +35,7 @@ class ResilienceModuleSpec extends Specification {
     app = ratpack {
       bindings {
         bindInstance(CircuitBreakerRegistry, registry)
+        bindInstance(RateLimiterRegistry, RateLimiterRegistry.of(RateLimiterConfig.ofDefaults()))
         bind(Something)
         module(ResilienceModule)
       }
@@ -76,6 +79,15 @@ class ResilienceModuleSpec extends Specification {
             render it
           }
         }
+        get('normal') { Something something ->
+          render something.breakerNormal()
+        }
+        get('normalBad') { Something something ->
+          render something.breakerNormalBad()
+        }
+        get('normalRecover') { Something something ->
+          render something.breakerNormalRecover()
+        }
       }
     }
     client = testHttpClient(app)
@@ -114,6 +126,7 @@ class ResilienceModuleSpec extends Specification {
     'promise' | 'promiseBad' | 'promiseRecover' | 'test'      | 'breaker promise' | 500
     'stage'   | 'stageBad'   | 'stageRecover'   | 'test'      | 'breaker stage'   | 404
     'flow'    | 'flowBad'    | 'flowRecover'    | 'test'      | 'breaker flow'    | 500
+    'normal'  | 'normalBad'  | 'normalRecover'  | 'test'      | 'breaker normal'  | 404
   }
 
   def buildConfig() {
@@ -127,55 +140,70 @@ class ResilienceModuleSpec extends Specification {
 
   static class Something {
 
-    @Breaker(name = "test")
+    @CircuitBreak(name = "test")
     Promise<String> breakerPromise() {
       Promise.async {
         it.success("breaker promise")
       }
     }
 
-    @Breaker(name = "test")
+    @CircuitBreak(name = "test")
     Promise<String> breakerPromiseBad() {
       Promise.async {
         it.error(new Exception("breaker promise bad"))
       }
     }
 
-    @Breaker(name = "test", recovery = MyRecoveryFunction)
+    @CircuitBreak(name = "test", recovery = MyRecoveryFunction)
     Promise<String> breakerPromiseRecovery() {
       Promise.async {
         it.error(new Exception("breaker promise bad"))
       }
     }
 
-    @Breaker(name = "test")
+    @CircuitBreak(name = "test")
     CompletionStage<String> breakerStage() {
       CompletableFuture.supplyAsync { 'breaker stage' }
     }
 
-    @Breaker(name = "test")
+    @CircuitBreak(name = "test")
     CompletionStage<Void> breakerStageBad() {
       CompletableFuture.supplyAsync { throw new RuntimeException("bad") }
     }
 
-    @Breaker(name = "test", recovery = MyRecoveryFunction)
+    @CircuitBreak(name = "test", recovery = MyRecoveryFunction)
     CompletionStage<Void> breakerStageRecover() {
       CompletableFuture.supplyAsync { throw new RuntimeException("bad") }
     }
 
-    @Breaker(name = "test")
+    @CircuitBreak(name = "test")
     Flowable<String> breakerFlow() {
       Flowable.just("breaker flow")
     }
 
-    @Breaker(name = "test")
+    @CircuitBreak(name = "test")
     Flowable<Void> breakerFlowBad() {
       Flowable.just("breaker flow").map({ throw new Exception("bad") } as Function<String, Void>)
     }
 
-    @Breaker(name = "test", recovery = MyRecoveryFunction)
+    @CircuitBreak(name = "test", recovery = MyRecoveryFunction)
     Flowable<Void> breakerFlowRecover() {
       Flowable.just("breaker flow").map({ throw new Exception("bad") } as Function<String, Void>)
+    }
+
+    @CircuitBreak(name = "test")
+    String breakerNormal() {
+      "breaker normal"
+    }
+
+    @CircuitBreak(name = "test")
+    String breakerNormalBad() {
+      throw new Exception("bad")
+    }
+
+    @CircuitBreak(name = "test", recovery = MyRecoveryFunction)
+    String breakerNormalRecover() {
+      throw new Exception("bad")
     }
   }
 

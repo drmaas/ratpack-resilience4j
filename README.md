@@ -56,8 +56,8 @@ compile 'me.drmaas:ratpack-resilience4j:x.x.x'
       .maxAttempts(3)
       .waitDuration(Duration.ofMillis(500))
       .build()
-    Retry retry = Retry.of("test", config)
-    RetryTransformer<String> transformer = RetryTransformer.of(retry).recover { t -> "bar" }
+    Retry rate = Retry.of("test", config)
+    RetryTransformer<String> transformer = RetryTransformer.of(rate).recover { t -> "bar" }
     AtomicInteger times = new AtomicInteger(0)
 
     when:

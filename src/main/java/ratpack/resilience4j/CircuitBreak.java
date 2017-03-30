@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * <p/>
  * Given a method like this:
  * <pre><code>
- *     {@literal @}Breaker(name = "myCircuitBreaker")
+ *     {@literal @}CircuitBreak(name = "myCircuitBreaker")
  *     public String fancyName(String name) {
  *         return "Sir Captain " + name;
  *     }
@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.ANNOTATION_TYPE })
-public @interface Breaker {
+public @interface CircuitBreak {
   /**
    * @return The name of the circuit breaker. It will be looked up the circuit breaker registry.
    */
