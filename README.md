@@ -1,3 +1,7 @@
+# MOVED
+
+This project is now hosted by resilience4j. https://github.com/resilience4j/resilience4j
+
 # ratpack-resilience4j
 Ratpack support for resilience4j. https://github.com/resilience4j/resilience4j
 
